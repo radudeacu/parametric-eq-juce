@@ -61,6 +61,7 @@ target_sources(ParametricEQ
         Source/UI/BandControlComponent.cpp
         Source/UI/GlobalControlsComponent.cpp
         Source/UI/TestToneControlsComponent.cpp
+        Source/UI/LatencyDisplayComponent.cpp
         Source/UI/ModernLookAndFeel.cpp
 )
 
@@ -71,6 +72,10 @@ target_compile_definitions(ParametricEQ
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
+        # Enables ASIO device support (MS Windows only) using JUCE's bundled
+        # ASIO headers, so real audio interfaces (e.g. Focusrite) expose
+        # their low-latency ASIO driver instead of only WASAPI/DirectSound.
+        JUCE_ASIO=1
 )
 
 target_link_libraries(ParametricEQ

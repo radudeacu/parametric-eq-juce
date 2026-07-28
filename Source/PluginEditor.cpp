@@ -19,13 +19,14 @@ ParametricEQAudioProcessorEditor::ParametricEQAudioProcessorEditor (ParametricEQ
 
     addAndMakeVisible (analyzerPanel);
     addAndMakeVisible (testToneControls);
+    addAndMakeVisible (latencyDisplay);
 
     for (auto* band : { &band1Controls, &band2Controls, &band3Controls, &band4Controls, &band5Controls })
         addAndMakeVisible (band);
 
     addAndMakeVisible (globalControls);
 
-    setSize (900, 600);
+    setSize (900, 624);
 }
 
 ParametricEQAudioProcessorEditor::~ParametricEQAudioProcessorEditor()
@@ -47,6 +48,7 @@ void ParametricEQAudioProcessorEditor::resized()
 
     analyzerPanel.setBounds (area.removeFromTop (250));
     testToneControls.setBounds (area.removeFromTop (40));
+    latencyDisplay.setBounds (area.removeFromTop (24));
     globalControls.setBounds (area.removeFromBottom (60));
 
     const int bandWidth = area.getWidth() / 5;
