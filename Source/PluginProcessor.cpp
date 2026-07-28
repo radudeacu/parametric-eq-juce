@@ -25,6 +25,8 @@ void ParametricEQAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
     outputGain.prepare (spec);
     outputGain.setRampDurationSeconds (0.02);
 
+    testToneGenerator.prepare (spec);
+
     analyzerFifo.prepare (samplesPerBlock);
 }
 
@@ -36,6 +38,7 @@ void ParametricEQAudioProcessor::releaseResources()
     highMidBand.reset();
     highBand.reset();
     outputGain.reset();
+    testToneGenerator.reset();
     analyzerFifo.reset();
 }
 
@@ -86,7 +89,13 @@ void ParametricEQAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 {
     juce::ScopedNoDenormals noDenormals;
 
-    // Pre-EQ tap: runs before filtering and even while bypassed.
+    testToneGenerator.setParameters (apvts.getRawParameterValue (ParamIDs::testToneEnabled)->load() > 0.5f,
+                                      apvts.getRawParameterValue (ParamIDs::testToneFreqHz)->load(),
+                                      apvts.getRawParameterValue (ParamIDs::testToneGainDb)->load());
+    testToneGenerator.process (buffer);
+
+    // Pre-EQ tap: runs after the test tone substitution but before filtering,
+    // and even while bypassed.
     analyzerFifo.pushSamples (buffer);
 
     if (apvts.getRawParameterValue (ParamIDs::bypass)->load() > 0.5f)

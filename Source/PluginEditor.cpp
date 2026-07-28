@@ -4,6 +4,7 @@
 ParametricEQAudioProcessorEditor::ParametricEQAudioProcessorEditor (ParametricEQAudioProcessor& processor)
     : AudioProcessorEditor (&processor), audioProcessor (processor),
       analyzerComponent (processor.analyzerFifo),
+      testToneControls (processor.apvts),
       band1Controls (processor.apvts, "Low", ParamIDs::band1FreqHz, ParamIDs::band1GainDb, ParamIDs::band1Q,
                      ParamIDs::band1Type, ParamIDs::band1Slope),
       band2Controls (processor.apvts, "Low-Mid", ParamIDs::band2FreqHz, ParamIDs::band2GainDb, ParamIDs::band2Q),
@@ -14,6 +15,7 @@ ParametricEQAudioProcessorEditor::ParametricEQAudioProcessorEditor (ParametricEQ
       globalControls (processor.apvts)
 {
     addAndMakeVisible (analyzerComponent);
+    addAndMakeVisible (testToneControls);
 
     for (auto* band : { &band1Controls, &band2Controls, &band3Controls, &band4Controls, &band5Controls })
         addAndMakeVisible (band);
@@ -33,6 +35,7 @@ void ParametricEQAudioProcessorEditor::resized()
     auto area = getLocalBounds();
 
     analyzerComponent.setBounds (area.removeFromTop (250));
+    testToneControls.setBounds (area.removeFromTop (40));
     globalControls.setBounds (area.removeFromBottom (60));
 
     const int bandWidth = area.getWidth() / 5;

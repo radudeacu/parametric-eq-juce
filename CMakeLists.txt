@@ -53,10 +53,12 @@ target_sources(ParametricEQ
         Source/DSP/LowBand.cpp
         Source/DSP/HighBand.cpp
         Source/DSP/PeakBand.cpp
+        Source/DSP/TestToneGenerator.cpp
         Source/Analyzer/SpectrumAnalyzerFifo.cpp
         Source/Analyzer/SpectrumAnalyzerComponent.cpp
         Source/UI/BandControlComponent.cpp
         Source/UI/GlobalControlsComponent.cpp
+        Source/UI/TestToneControlsComponent.cpp
 )
 
 target_include_directories(ParametricEQ PRIVATE Source)
@@ -88,6 +90,7 @@ target_sources(ParametricEQ_Tests
         Source/DSP/LowBand.cpp
         Source/DSP/HighBand.cpp
         Source/DSP/PeakBand.cpp
+        Source/DSP/TestToneGenerator.cpp
 )
 target_link_libraries(ParametricEQ_Tests PRIVATE juce::juce_audio_utils juce::juce_dsp)
 add_test(NAME DspUnitTests COMMAND ParametricEQ_Tests)

@@ -62,6 +62,15 @@ namespace
             juce::StringArray { "12 dB/oct", "24 dB/oct", "36 dB/oct" }, 0);
     }
 
+    std::unique_ptr<juce::AudioParameterFloat> makeLevelParam (const juce::String& id, const juce::String& name,
+                                                                 float defaultDb)
+    {
+        return std::make_unique<juce::AudioParameterFloat> (
+            juce::ParameterID { id, paramVersion }, name,
+            juce::NormalisableRange<float> { -60.0f, 0.0f, 0.1f }, defaultDb,
+            juce::AudioParameterFloatAttributes().withLabel ("dB"));
+    }
+
     // Bands 1 & 5: switchable Pass/Shelf type plus a slope selector.
     void addOuterBandParams (juce::AudioProcessorValueTreeState::ParameterLayout& layout,
                               const juce::String& typeId, const juce::String& freqId,
@@ -106,6 +115,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
     layout.add (makeGainParam (ParamIDs::outputGainDb, "Output Trim"));
     layout.add (std::make_unique<juce::AudioParameterBool> (
         juce::ParameterID { ParamIDs::bypass, paramVersion }, "Bypass", false));
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { ParamIDs::testToneEnabled, paramVersion }, "Test Tone", false));
+    layout.add (makeFreqParam (ParamIDs::testToneFreqHz, "Test Tone Freq", 20.0f, 20000.0f, 1000.0f));
+    layout.add (makeLevelParam (ParamIDs::testToneGainDb, "Test Tone Level", -18.0f));
 
     return layout;
 }

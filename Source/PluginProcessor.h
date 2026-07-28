@@ -5,6 +5,7 @@
 #include "DSP/LowBand.h"
 #include "DSP/HighBand.h"
 #include "DSP/PeakBand.h"
+#include "DSP/TestToneGenerator.h"
 #include "Analyzer/SpectrumAnalyzerFifo.h"
 
 class ParametricEQAudioProcessor : public juce::AudioProcessor
@@ -45,6 +46,7 @@ private:
     PeakBand lowMidBand, midBand, highMidBand;
     HighBand highBand;
     juce::dsp::Gain<float> outputGain;
+    TestToneGenerator testToneGenerator;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ParametricEQAudioProcessor)
 };

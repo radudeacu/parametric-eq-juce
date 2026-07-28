@@ -4,6 +4,7 @@
 #include "PluginProcessor.h"
 #include "UI/BandControlComponent.h"
 #include "UI/GlobalControlsComponent.h"
+#include "UI/TestToneControlsComponent.h"
 #include "Analyzer/SpectrumAnalyzerComponent.h"
 
 class ParametricEQAudioProcessorEditor : public juce::AudioProcessorEditor
@@ -18,6 +19,7 @@ private:
     ParametricEQAudioProcessor& audioProcessor;
 
     SpectrumAnalyzerComponent analyzerComponent;
+    TestToneControlsComponent testToneControls;
     BandControlComponent band1Controls, band2Controls, band3Controls, band4Controls, band5Controls;
     GlobalControlsComponent globalControls;
 

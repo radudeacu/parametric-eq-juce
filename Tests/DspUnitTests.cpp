@@ -1,10 +1,12 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 #include <cmath>
+#include <iostream>
 #include "DSP/SlopeFilterChain.h"
 #include "DSP/LowBand.h"
 #include "DSP/HighBand.h"
 #include "DSP/PeakBand.h"
+#include "DSP/TestToneGenerator.h"
 #include "Parameters/ParameterLayout.h"
 #include "Parameters/ParameterIDs.h"
 
@@ -75,14 +77,17 @@ public:
     {
         DummyProcessor processor;
 
-        beginTest ("Creates the expected 21 parameters");
-        expectEquals (processor.getParameters().size(), 21);
+        beginTest ("Creates the expected 24 parameters");
+        expectEquals (processor.getParameters().size(), 24);
 
         beginTest ("Key parameter IDs are present");
         expect (processor.apvts.getParameter (ParamIDs::band1Type) != nullptr);
         expect (processor.apvts.getParameter (ParamIDs::band5Slope) != nullptr);
         expect (processor.apvts.getParameter (ParamIDs::bypass) != nullptr);
         expect (processor.apvts.getParameter (ParamIDs::outputGainDb) != nullptr);
+        expect (processor.apvts.getParameter (ParamIDs::testToneEnabled) != nullptr);
+        expect (processor.apvts.getParameter (ParamIDs::testToneFreqHz) != nullptr);
+        expect (processor.apvts.getParameter (ParamIDs::testToneGainDb) != nullptr);
     }
 };
 
@@ -181,18 +186,94 @@ public:
     }
 };
 
+class TestToneGeneratorTests : public juce::UnitTest
+{
+public:
+    TestToneGeneratorTests() : juce::UnitTest ("TestToneGenerator") {}
+
+    void runTest() override
+    {
+        constexpr double sampleRate = 48000.0;
+        constexpr int blockSize = 512;
+        const juce::dsp::ProcessSpec spec { sampleRate, (juce::uint32) blockSize, 2 };
+
+        beginTest ("Disabled generator leaves the buffer untouched");
+        {
+            TestToneGenerator generator;
+            generator.prepare (spec);
+            generator.setParameters (false, 1000.0f, -6.0f);
+
+            auto buffer = makeNoiseBuffer (blockSize);
+            juce::AudioBuffer<float> original;
+            original.makeCopyOf (buffer);
+
+            generator.process (buffer);
+
+            bool unchanged = true;
+            for (int i = 0; i < blockSize; ++i)
+                unchanged &= (buffer.getSample (0, i) == original.getSample (0, i));
+
+            expect (unchanged);
+        }
+
+        beginTest ("Enabled generator produces a finite, level-bounded sine");
+        {
+            TestToneGenerator generator;
+            generator.prepare (spec);
+
+            juce::AudioBuffer<float> buffer (2, blockSize);
+
+            // Run several blocks so the 20ms level ramp settles.
+            for (int b = 0; b < 10; ++b)
+            {
+                generator.setParameters (true, 1000.0f, -6.0f);
+                generator.process (buffer);
+            }
+
+            const float expectedPeak = juce::Decibels::decibelsToGain (-6.0f);
+            bool allFinite = true;
+            float maxAbs = 0.0f;
+
+            for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+                for (int i = 0; i < blockSize; ++i)
+                {
+                    const float sample = buffer.getSample (ch, i);
+                    allFinite &= std::isfinite (sample);
+                    maxAbs = juce::jmax (maxAbs, std::abs (sample));
+                }
+
+            expect (allFinite);
+            expect (maxAbs < expectedPeak * 1.01f, "peak should not exceed the target level");
+            expect (maxAbs > expectedPeak * 0.9f, "peak should have settled near the target level");
+        }
+    }
+};
+
 static ParameterLayoutTests parameterLayoutTests;
 static SlopeFilterChainTests slopeFilterChainTests;
 static BandSmoothingTests bandSmoothingTests;
+static TestToneGeneratorTests testToneGeneratorTests;
 
 int main()
 {
     juce::UnitTestRunner runner;
     runner.runAllTests();
 
-    for (int i = 0; i < runner.getNumResults(); ++i)
-        if (runner.getResult (i)->failures > 0)
-            return 1;
+    bool anyFailures = false;
 
-    return 0;
+    for (int i = 0; i < runner.getNumResults(); ++i)
+    {
+        const auto* result = runner.getResult (i);
+        std::cout << result->unitTestName << " / " << result->subcategoryName
+                   << ": " << result->passes << " passed, " << result->failures << " failed\n";
+
+        if (result->failures > 0)
+        {
+            anyFailures = true;
+            for (const auto& message : result->messages)
+                std::cout << "    " << message << "\n";
+        }
+    }
+
+    return anyFailures ? 1 : 0;
 }

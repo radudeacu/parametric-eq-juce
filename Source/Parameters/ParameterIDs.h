@@ -28,4 +28,8 @@ namespace ParamIDs
 
     inline constexpr auto outputGainDb = "outputGainDb";
     inline constexpr auto bypass       = "bypass";
+
+    inline constexpr auto testToneEnabled = "testToneEnabled";
+    inline constexpr auto testToneFreqHz  = "testToneFreqHz";
+    inline constexpr auto testToneGainDb  = "testToneGainDb";
 }
