@@ -2,6 +2,7 @@
 
 #include <juce_dsp/juce_dsp.h>
 #include <array>
+#include <atomic>
 
 // Lock-free, alloc-free hand-off of the pre-EQ signal from the audio thread
 // to the UI thread. Audio thread mixes to mono and writes into a ring buffer;
@@ -12,8 +13,10 @@ public:
     static constexpr int fftOrder = 11;
     static constexpr int fftSize = 1 << fftOrder; // 2048
 
-    void prepare (int maxSamplesPerBlock);
+    void prepare (double sampleRateToUse, int maxSamplesPerBlock);
     void reset();
+
+    double getSampleRate() const noexcept { return sampleRate.load(); }
 
     // AUDIO THREAD.
     void pushSamples (const juce::AudioBuffer<float>& buffer);
@@ -22,6 +25,7 @@ public:
     bool popFftBlockWhenReady (std::array<float, 2 * (size_t) fftSize>& fftData);
 
 private:
+    std::atomic<double> sampleRate { 44100.0 };
     juce::AbstractFifo fifo { 1 << 13 };
     juce::AudioBuffer<float> ringBuffer;
     juce::AudioBuffer<float> monoScratch;

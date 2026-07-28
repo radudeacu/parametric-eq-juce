@@ -27,7 +27,7 @@ void ParametricEQAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
 
     testToneGenerator.prepare (spec);
 
-    analyzerFifo.prepare (samplesPerBlock);
+    analyzerFifo.prepare (sampleRate, samplesPerBlock);
 }
 
 void ParametricEQAudioProcessor::releaseResources()
@@ -48,11 +48,25 @@ bool ParametricEQAudioProcessor::isBusesLayoutSupported (const BusesLayout& layo
         || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo();
 }
 
+LowBandType ParametricEQAudioProcessor::decodeLowBandType (float rawChoiceValue)
+{
+    return rawChoiceValue < 0.5f ? LowBandType::HighPass : LowBandType::LowShelf;
+}
+
+HighBandType ParametricEQAudioProcessor::decodeHighBandType (float rawChoiceValue)
+{
+    return rawChoiceValue < 0.5f ? HighBandType::LowPass : HighBandType::HighShelf;
+}
+
+int ParametricEQAudioProcessor::decodeSlope (float rawChoiceValue)
+{
+    return 12 * (1 + (int) rawChoiceValue);
+}
+
 void ParametricEQAudioProcessor::updateBandParameters (int numSamples)
 {
-    const auto band1Type = apvts.getRawParameterValue (ParamIDs::band1Type)->load() < 0.5f
-                                ? LowBandType::HighPass : LowBandType::LowShelf;
-    const int band1Slope = 12 * (1 + (int) apvts.getRawParameterValue (ParamIDs::band1Slope)->load());
+    const auto band1Type = decodeLowBandType (apvts.getRawParameterValue (ParamIDs::band1Type)->load());
+    const int band1Slope = decodeSlope (apvts.getRawParameterValue (ParamIDs::band1Slope)->load());
 
     lowBand.setParameters (band1Type,
                             apvts.getRawParameterValue (ParamIDs::band1FreqHz)->load(),
@@ -72,9 +86,8 @@ void ParametricEQAudioProcessor::updateBandParameters (int numSamples)
                                 apvts.getRawParameterValue (ParamIDs::band4GainDb)->load(),
                                 apvts.getRawParameterValue (ParamIDs::band4Q)->load(), numSamples);
 
-    const auto band5Type = apvts.getRawParameterValue (ParamIDs::band5Type)->load() < 0.5f
-                                ? HighBandType::LowPass : HighBandType::HighShelf;
-    const int band5Slope = 12 * (1 + (int) apvts.getRawParameterValue (ParamIDs::band5Slope)->load());
+    const auto band5Type = decodeHighBandType (apvts.getRawParameterValue (ParamIDs::band5Type)->load());
+    const int band5Slope = decodeSlope (apvts.getRawParameterValue (ParamIDs::band5Slope)->load());
 
     highBand.setParameters (band5Type,
                              apvts.getRawParameterValue (ParamIDs::band5FreqHz)->load(),
@@ -132,6 +145,68 @@ void ParametricEQAudioProcessor::setStateInformation (const void* data, int size
     if (auto xml = getXmlFromBinary (data, sizeInBytes))
         if (xml->hasTagName (apvts.state.getType()))
             apvts.replaceState (juce::ValueTree::fromXml (*xml));
+}
+
+float ParametricEQAudioProcessor::getMagnitudeForFrequencyDb (double freqHz) const
+{
+    float result = 0.0f;
+    getMagnitudeResponseDb (&freqHz, &result, 1);
+    return result;
+}
+
+void ParametricEQAudioProcessor::getMagnitudeResponseDb (const double* frequenciesHz, float* magnitudesDbOut,
+                                                          int numPoints) const
+{
+    if (apvts.getRawParameterValue (ParamIDs::bypass)->load() > 0.5f)
+    {
+        for (int i = 0; i < numPoints; ++i)
+            magnitudesDbOut[i] = 0.0f;
+
+        return;
+    }
+
+    const double sampleRate = analyzerFifo.getSampleRate();
+
+    const auto band1Type = decodeLowBandType (apvts.getRawParameterValue (ParamIDs::band1Type)->load());
+    const int band1Slope = decodeSlope (apvts.getRawParameterValue (ParamIDs::band1Slope)->load());
+    const float band1Freq = apvts.getRawParameterValue (ParamIDs::band1FreqHz)->load();
+    const float band1Gain = apvts.getRawParameterValue (ParamIDs::band1GainDb)->load();
+    const float band1Q = apvts.getRawParameterValue (ParamIDs::band1Q)->load();
+
+    const float band2Freq = apvts.getRawParameterValue (ParamIDs::band2FreqHz)->load();
+    const float band2Gain = apvts.getRawParameterValue (ParamIDs::band2GainDb)->load();
+    const float band2Q = apvts.getRawParameterValue (ParamIDs::band2Q)->load();
+
+    const float band3Freq = apvts.getRawParameterValue (ParamIDs::band3FreqHz)->load();
+    const float band3Gain = apvts.getRawParameterValue (ParamIDs::band3GainDb)->load();
+    const float band3Q = apvts.getRawParameterValue (ParamIDs::band3Q)->load();
+
+    const float band4Freq = apvts.getRawParameterValue (ParamIDs::band4FreqHz)->load();
+    const float band4Gain = apvts.getRawParameterValue (ParamIDs::band4GainDb)->load();
+    const float band4Q = apvts.getRawParameterValue (ParamIDs::band4Q)->load();
+
+    const auto band5Type = decodeHighBandType (apvts.getRawParameterValue (ParamIDs::band5Type)->load());
+    const int band5Slope = decodeSlope (apvts.getRawParameterValue (ParamIDs::band5Slope)->load());
+    const float band5Freq = apvts.getRawParameterValue (ParamIDs::band5FreqHz)->load();
+    const float band5Gain = apvts.getRawParameterValue (ParamIDs::band5GainDb)->load();
+    const float band5Q = apvts.getRawParameterValue (ParamIDs::band5Q)->load();
+
+    const float outputGainDb = apvts.getRawParameterValue (ParamIDs::outputGainDb)->load();
+
+    for (int i = 0; i < numPoints; ++i)
+    {
+        const double freqHz = frequenciesHz[i];
+
+        float magnitude = LowBand::getMagnitudeForFrequency (band1Type, freqHz, sampleRate, band1Freq, band1Gain,
+                                                              band1Q, band1Slope);
+        magnitude *= PeakBand::getMagnitudeForFrequency (freqHz, sampleRate, band2Freq, band2Gain, band2Q);
+        magnitude *= PeakBand::getMagnitudeForFrequency (freqHz, sampleRate, band3Freq, band3Gain, band3Q);
+        magnitude *= PeakBand::getMagnitudeForFrequency (freqHz, sampleRate, band4Freq, band4Gain, band4Q);
+        magnitude *= HighBand::getMagnitudeForFrequency (band5Type, freqHz, sampleRate, band5Freq, band5Gain,
+                                                          band5Q, band5Slope);
+
+        magnitudesDbOut[i] = juce::Decibels::gainToDecibels (magnitude) + outputGainDb;
+    }
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

@@ -36,11 +36,21 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    // Pure UI-thread query: independently rebuilds each band's coefficients
+    // from APVTS parameter values rather than reading any live audio-thread
+    // DSP state, so it's safe to call from the editor at any time.
+    float getMagnitudeForFrequencyDb (double freqHz) const;
+    void getMagnitudeResponseDb (const double* frequenciesHz, float* magnitudesDbOut, int numPoints) const;
+
     juce::AudioProcessorValueTreeState apvts;
     SpectrumAnalyzerFifo analyzerFifo;
 
 private:
     void updateBandParameters (int numSamples);
+
+    static LowBandType decodeLowBandType (float rawChoiceValue);
+    static HighBandType decodeHighBandType (float rawChoiceValue);
+    static int decodeSlope (float rawChoiceValue);
 
     LowBand lowBand;
     PeakBand lowMidBand, midBand, highMidBand;

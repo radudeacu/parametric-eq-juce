@@ -1,4 +1,5 @@
 #include "SpectrumAnalyzerComponent.h"
+#include "AnalyzerMapping.h"
 
 SpectrumAnalyzerComponent::SpectrumAnalyzerComponent (SpectrumAnalyzerFifo& fifoToUse) : fifo (fifoToUse)
 {
@@ -44,11 +45,13 @@ void SpectrumAnalyzerComponent::drawNextFrameOfSpectrum()
     constexpr float minDb = -100.0f;
     constexpr float maxDb = 0.0f;
     constexpr int fftSize = SpectrumAnalyzerFifo::fftSize;
+    const float sampleRate = (float) fifo.getSampleRate();
 
     for (int i = 0; i < scopeSize; ++i)
     {
-        const float skewedProportionX = 1.0f - std::exp (std::log (1.0f - (float) i / (float) scopeSize) * 0.2f);
-        const int fftDataIndex = juce::jlimit (0, fftSize / 2, (int) (skewedProportionX * (float) fftSize * 0.5f));
+        const float proportion = (float) i / (float) (scopeSize - 1);
+        const float freqHz = AnalyzerMapping::proportionToFrequency (proportion);
+        const int fftDataIndex = juce::jlimit (0, fftSize / 2, juce::roundToInt (freqHz * (float) fftSize / sampleRate));
         const float levelDb = juce::Decibels::gainToDecibels (fftData[(size_t) fftDataIndex])
                                - juce::Decibels::gainToDecibels ((float) fftSize);
 

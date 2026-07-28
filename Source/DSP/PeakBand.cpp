@@ -49,8 +49,7 @@ void PeakBand::setParameters (float freqHz, float gainDb, float q, int numSample
     if (! changed)
         return;
 
-    filter.coefficients = Coefficients::makePeakFilter (sampleRate, effectiveFreq, effectiveQ,
-                                                          juce::Decibels::decibelsToGain (effectiveGain));
+    filter.coefficients = buildCoefficients (sampleRate, effectiveFreq, effectiveGain, effectiveQ);
 
     lastFreqHz = effectiveFreq;
     lastGainDb = effectiveGain;
@@ -61,4 +60,15 @@ void PeakBand::setParameters (float freqHz, float gainDb, float q, int numSample
 void PeakBand::process (juce::dsp::ProcessContextReplacing<float>& context)
 {
     filter.process (context);
+}
+
+PeakBand::Coefficients::Ptr PeakBand::buildCoefficients (double sampleRate, float freqHz, float gainDb, float q)
+{
+    return Coefficients::makePeakFilter (sampleRate, freqHz, q, juce::Decibels::decibelsToGain (gainDb));
+}
+
+float PeakBand::getMagnitudeForFrequency (double queryFreqHz, double sampleRate, float freqHz, float gainDb, float q)
+{
+    return (float) buildCoefficients (sampleRate, freqHz, gainDb, q)->getMagnitudeForFrequency (queryFreqHz,
+                                                                                                  sampleRate);
 }

@@ -67,3 +67,11 @@ void HighBand::process (juce::dsp::ProcessContextReplacing<float>& context)
 {
     filterChain.process (context);
 }
+
+float HighBand::getMagnitudeForFrequency (HighBandType type, double queryFreqHz, double sampleRate, float freqHz,
+                                           float gainDb, float q, int slopeDbPerOctave)
+{
+    const auto kind = (type == HighBandType::LowPass) ? SlopeFilterKind::LowPass : SlopeFilterKind::HighShelf;
+    return SlopeFilterChain::getMagnitudeForFrequency (kind, queryFreqHz, sampleRate, freqHz, q, gainDb,
+                                                        slopeDbPerOctave);
+}
