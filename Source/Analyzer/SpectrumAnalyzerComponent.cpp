@@ -1,5 +1,6 @@
 #include "SpectrumAnalyzerComponent.h"
 #include "AnalyzerMapping.h"
+#include "../UI/Theme.h"
 
 SpectrumAnalyzerComponent::SpectrumAnalyzerComponent (SpectrumAnalyzerFifo& fifoToUse) : fifo (fifoToUse)
 {
@@ -8,7 +9,7 @@ SpectrumAnalyzerComponent::SpectrumAnalyzerComponent (SpectrumAnalyzerFifo& fifo
 
 void SpectrumAnalyzerComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colours::black);
+    g.fillAll (Theme::analyzerBackground);
 
     const float width = (float) getWidth();
     const float height = (float) getHeight();

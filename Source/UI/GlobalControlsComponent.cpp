@@ -1,4 +1,5 @@
 #include "GlobalControlsComponent.h"
+#include "GlassPanel.h"
 #include "../Parameters/ParameterIDs.h"
 
 GlobalControlsComponent::GlobalControlsComponent (juce::AudioProcessorValueTreeState& apvts)
@@ -15,6 +16,11 @@ GlobalControlsComponent::GlobalControlsComponent (juce::AudioProcessorValueTreeS
 
     trimAttachment = std::make_unique<SliderAttachment> (apvts, ParamIDs::outputGainDb, trimSlider);
     bypassAttachment = std::make_unique<ButtonAttachment> (apvts, ParamIDs::bypass, bypassButton);
+}
+
+void GlobalControlsComponent::paint (juce::Graphics& g)
+{
+    GlassPanel::draw (g, getLocalBounds().toFloat());
 }
 
 void GlobalControlsComponent::resized()

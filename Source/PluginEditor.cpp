@@ -1,5 +1,6 @@
 #include "PluginEditor.h"
 #include "Parameters/ParameterIDs.h"
+#include "UI/Theme.h"
 
 ParametricEQAudioProcessorEditor::ParametricEQAudioProcessorEditor (ParametricEQAudioProcessor& processor)
     : AudioProcessorEditor (&processor), audioProcessor (processor),
@@ -14,6 +15,8 @@ ParametricEQAudioProcessorEditor::ParametricEQAudioProcessorEditor (ParametricEQ
                      ParamIDs::band5Type, ParamIDs::band5Slope),
       globalControls (processor.apvts)
 {
+    setLookAndFeel (&lookAndFeel);
+
     addAndMakeVisible (analyzerPanel);
     addAndMakeVisible (testToneControls);
 
@@ -25,9 +28,17 @@ ParametricEQAudioProcessorEditor::ParametricEQAudioProcessorEditor (ParametricEQ
     setSize (900, 600);
 }
 
+ParametricEQAudioProcessorEditor::~ParametricEQAudioProcessorEditor()
+{
+    setLookAndFeel (nullptr);
+}
+
 void ParametricEQAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    juce::ColourGradient gradient (Theme::backgroundTop, 0.0f, 0.0f,
+                                    Theme::backgroundBottom, 0.0f, (float) getHeight(), false);
+    g.setGradientFill (gradient);
+    g.fillRect (getLocalBounds());
 }
 
 void ParametricEQAudioProcessorEditor::resized()

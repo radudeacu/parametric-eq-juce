@@ -1,4 +1,5 @@
 #include "TestToneControlsComponent.h"
+#include "GlassPanel.h"
 #include "../Parameters/ParameterIDs.h"
 
 TestToneControlsComponent::TestToneControlsComponent (juce::AudioProcessorValueTreeState& apvts)
@@ -21,6 +22,11 @@ TestToneControlsComponent::TestToneControlsComponent (juce::AudioProcessorValueT
     enableAttachment = std::make_unique<ButtonAttachment> (apvts, ParamIDs::testToneEnabled, enableButton);
     freqAttachment = std::make_unique<SliderAttachment> (apvts, ParamIDs::testToneFreqHz, freqSlider);
     levelAttachment = std::make_unique<SliderAttachment> (apvts, ParamIDs::testToneGainDb, levelSlider);
+}
+
+void TestToneControlsComponent::paint (juce::Graphics& g)
+{
+    GlassPanel::draw (g, getLocalBounds().toFloat());
 }
 
 void TestToneControlsComponent::resized()

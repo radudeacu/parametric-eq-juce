@@ -1,4 +1,5 @@
 #include "BandControlComponent.h"
+#include "GlassPanel.h"
 
 namespace
 {
@@ -61,6 +62,11 @@ BandControlComponent::BandControlComponent (juce::AudioProcessorValueTreeState& 
         typeAttachment = std::make_unique<ComboBoxAttachment> (apvts, typeParamId, typeBox);
         slopeAttachment = std::make_unique<ComboBoxAttachment> (apvts, slopeParamId, slopeBox);
     }
+}
+
+void BandControlComponent::paint (juce::Graphics& g)
+{
+    GlassPanel::draw (g, getLocalBounds().toFloat());
 }
 
 void BandControlComponent::resized()

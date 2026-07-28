@@ -13,6 +13,7 @@ public:
                            const juce::String& qParamId,
                            const juce::String& typeParamId = {}, const juce::String& slopeParamId = {});
 
+    void paint (juce::Graphics& g) override;
     void resized() override;
 
 private:

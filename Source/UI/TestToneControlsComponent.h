@@ -10,6 +10,7 @@ class TestToneControlsComponent : public juce::Component
 public:
     explicit TestToneControlsComponent (juce::AudioProcessorValueTreeState& apvts);
 
+    void paint (juce::Graphics& g) override;
     void resized() override;
 
 private:

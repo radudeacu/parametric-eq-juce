@@ -9,6 +9,7 @@ class GlobalControlsComponent : public juce::Component
 public:
     explicit GlobalControlsComponent (juce::AudioProcessorValueTreeState& apvts);
 
+    void paint (juce::Graphics& g) override;
     void resized() override;
 
 private:
