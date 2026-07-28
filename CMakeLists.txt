@@ -56,6 +56,8 @@ target_sources(ParametricEQ
         Source/DSP/TestToneGenerator.cpp
         Source/Analyzer/SpectrumAnalyzerFifo.cpp
         Source/Analyzer/SpectrumAnalyzerComponent.cpp
+        Source/Analyzer/EqCurveOverlayComponent.cpp
+        Source/Analyzer/AnalyzerPanelComponent.cpp
         Source/UI/BandControlComponent.cpp
         Source/UI/GlobalControlsComponent.cpp
         Source/UI/TestToneControlsComponent.cpp

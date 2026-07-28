@@ -131,6 +131,17 @@ public:
 
             expect (allSamplesFinite (buffer), "finite at slope " + juce::String (slope));
         }
+
+        beginTest ("getMagnitudeForFrequency reads back ~-3dB at a Butterworth HighPass cutoff");
+        for (int slope : { 12, 24, 36 })
+        {
+            const float magnitude = SlopeFilterChain::getMagnitudeForFrequency (
+                SlopeFilterKind::HighPass, 200.0, sampleRate, 200.0f, 0.707f, 0.0f, slope);
+            const float magnitudeDb = juce::Decibels::gainToDecibels (magnitude);
+
+            expect (std::abs (magnitudeDb - (-3.01f)) < 1.0f,
+                    "expected ~-3dB at cutoff for slope " + juce::String (slope) + ", got " + juce::String (magnitudeDb));
+        }
     }
 };
 
@@ -182,6 +193,16 @@ public:
 
                 expect (allSamplesFinite (buffer), "finite at block " + juce::String (b));
             }
+        }
+
+        beginTest ("PeakBand::getMagnitudeForFrequency reads back its own gain at center frequency");
+        for (float gainDb : { -12.0f, 0.0f, 12.0f })
+        {
+            const float magnitude = PeakBand::getMagnitudeForFrequency (1000.0, sampleRate, 1000.0f, gainDb, 1.0f);
+            const float magnitudeDb = juce::Decibels::gainToDecibels (magnitude);
+
+            expect (std::abs (magnitudeDb - gainDb) < 0.1f,
+                    "expected ~" + juce::String (gainDb) + "dB at center, got " + juce::String (magnitudeDb));
         }
     }
 };

@@ -1,7 +1,8 @@
 #include "SpectrumAnalyzerFifo.h"
 
-void SpectrumAnalyzerFifo::prepare (int maxSamplesPerBlock)
+void SpectrumAnalyzerFifo::prepare (double sampleRateToUse, int maxSamplesPerBlock)
 {
+    sampleRate.store (sampleRateToUse);
     ringBuffer.setSize (1, fifo.getTotalSize());
     monoScratch.setSize (1, maxSamplesPerBlock);
     reset();

@@ -18,6 +18,10 @@ public:
                          int numSamples);
     void process (juce::dsp::ProcessContextReplacing<float>& context);
 
+    // Pure, stateless: safe to call from any thread.
+    static float getMagnitudeForFrequency (LowBandType type, double queryFreqHz, double sampleRate, float freqHz,
+                                            float gainDb, float q, int slopeDbPerOctave);
+
 private:
     SlopeFilterChain filterChain;
     double sampleRate = 44100.0;

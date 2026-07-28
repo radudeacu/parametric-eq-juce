@@ -6,14 +6,20 @@
 class PeakBand
 {
 public:
+    using Coefficients = juce::dsp::IIR::Coefficients<float>;
+
     void prepare (const juce::dsp::ProcessSpec& spec);
     void reset();
     void setParameters (float freqHz, float gainDb, float q, int numSamples);
     void process (juce::dsp::ProcessContextReplacing<float>& context);
 
+    // Pure, stateless: safe to call from any thread.
+    static Coefficients::Ptr buildCoefficients (double sampleRate, float freqHz, float gainDb, float q);
+    static float getMagnitudeForFrequency (double queryFreqHz, double sampleRate, float freqHz, float gainDb,
+                                            float q);
+
 private:
     using Filter = juce::dsp::IIR::Filter<float>;
-    using Coefficients = juce::dsp::IIR::Coefficients<float>;
 
     Filter filter;
     double sampleRate = 44100.0;
