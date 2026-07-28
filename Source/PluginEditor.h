@@ -5,18 +5,24 @@
 #include "UI/BandControlComponent.h"
 #include "UI/GlobalControlsComponent.h"
 #include "UI/TestToneControlsComponent.h"
+#include "UI/ModernLookAndFeel.h"
 #include "Analyzer/AnalyzerPanelComponent.h"
 
 class ParametricEQAudioProcessorEditor : public juce::AudioProcessorEditor
 {
 public:
     explicit ParametricEQAudioProcessorEditor (ParametricEQAudioProcessor& processor);
+    ~ParametricEQAudioProcessorEditor() override;
 
     void paint (juce::Graphics& g) override;
     void resized() override;
 
 private:
     ParametricEQAudioProcessor& audioProcessor;
+
+    // Declared first so it's constructed before, and destroyed after, every
+    // child component below that depends on it via getLookAndFeel().
+    ModernLookAndFeel lookAndFeel;
 
     AnalyzerPanelComponent analyzerPanel;
     TestToneControlsComponent testToneControls;

@@ -61,6 +61,7 @@ target_sources(ParametricEQ
         Source/UI/BandControlComponent.cpp
         Source/UI/GlobalControlsComponent.cpp
         Source/UI/TestToneControlsComponent.cpp
+        Source/UI/ModernLookAndFeel.cpp
 )
 
 target_include_directories(ParametricEQ PRIVATE Source)
