@@ -1,0 +1,27 @@
+#pragma once
+
+#include <juce_dsp/juce_dsp.h>
+
+// Bands 2-4: fixed Bell/Peak filter, single biquad, no type or slope selector.
+class PeakBand
+{
+public:
+    void prepare (const juce::dsp::ProcessSpec& spec);
+    void reset();
+    void setParameters (float freqHz, float gainDb, float q, int numSamples);
+    void process (juce::dsp::ProcessContextReplacing<float>& context);
+
+private:
+    using Filter = juce::dsp::IIR::Filter<float>;
+    using Coefficients = juce::dsp::IIR::Coefficients<float>;
+
+    Filter filter;
+    double sampleRate = 44100.0;
+
+    juce::SmoothedValue<float> freqSmoothed, gainSmoothed, qSmoothed;
+
+    float lastFreqHz = -1.0f;
+    float lastGainDb = 0.0f;
+    float lastQ = -1.0f;
+    bool firstUpdate = true;
+};
