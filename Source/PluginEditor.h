@@ -5,6 +5,7 @@
 #include "UI/BandControlComponent.h"
 #include "UI/GlobalControlsComponent.h"
 #include "UI/TestToneControlsComponent.h"
+#include "UI/LatencyDisplayComponent.h"
 #include "UI/ModernLookAndFeel.h"
 #include "Analyzer/AnalyzerPanelComponent.h"
 
@@ -26,6 +27,7 @@ private:
 
     AnalyzerPanelComponent analyzerPanel;
     TestToneControlsComponent testToneControls;
+    LatencyDisplayComponent latencyDisplay;
     BandControlComponent band1Controls, band2Controls, band3Controls, band4Controls, band5Controls;
     GlobalControlsComponent globalControls;
 
