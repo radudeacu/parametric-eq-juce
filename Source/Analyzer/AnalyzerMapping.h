@@ -39,4 +39,11 @@ namespace AnalyzerMapping
     {
         return juce::jmap (juce::jlimit (minGainDb, maxGainDb, db), maxGainDb, minGainDb, 0.0f, height);
     }
+
+    // Inverse of dbToY. Clamps internally since JUCE keeps delivering drag
+    // events outside a component's bounds once a drag has started.
+    inline float yToDb (float y, float height) noexcept
+    {
+        return juce::jmap (juce::jlimit (0.0f, height, y), 0.0f, height, maxGainDb, minGainDb);
+    }
 }
