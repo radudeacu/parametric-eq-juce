@@ -10,6 +10,21 @@ namespace
                                                        1000.0f, 2000.0f, 5000.0f, 10000.0f, 20000.0f };
     constexpr std::array<float, 5> gainTicks { -24.0f, -12.0f, 0.0f, 12.0f, 24.0f };
 
+    struct BandMarkerInfo
+    {
+        const char* freqParamId;
+        const char* gainParamId;
+        const char* typeParamId; // nullptr for bands 2-4 (always Bell/Peak, gain always draggable)
+    };
+
+    constexpr std::array<BandMarkerInfo, 5> bandMarkers { {
+        { ParamIDs::band1FreqHz, ParamIDs::band1GainDb, ParamIDs::band1Type },
+        { ParamIDs::band2FreqHz, ParamIDs::band2GainDb, nullptr },
+        { ParamIDs::band3FreqHz, ParamIDs::band3GainDb, nullptr },
+        { ParamIDs::band4FreqHz, ParamIDs::band4GainDb, nullptr },
+        { ParamIDs::band5FreqHz, ParamIDs::band5GainDb, ParamIDs::band5Type },
+    } };
+
     juce::String formatFrequencyLabel (float freqHz)
     {
         if (freqHz >= 1000.0f)
@@ -22,7 +37,6 @@ namespace
 EqCurveOverlayComponent::EqCurveOverlayComponent (ParametricEQAudioProcessor& processorToUse)
     : processor (processorToUse)
 {
-    setInterceptsMouseClicks (false, false);
     startTimerHz (30);
 }
 
@@ -127,25 +141,135 @@ juce::Path EqCurveOverlayComponent::buildCompositeCurvePath() const
 
 void EqCurveOverlayComponent::drawBandMarkers (juce::Graphics& g) const
 {
-    const float width = (float) getWidth();
-    const float height = (float) getHeight();
-
-    const std::array<const char*, 5> freqParamIds { ParamIDs::band1FreqHz, ParamIDs::band2FreqHz,
-                                                      ParamIDs::band3FreqHz, ParamIDs::band4FreqHz,
-                                                      ParamIDs::band5FreqHz };
-
-    for (auto* freqParamId : freqParamIds)
+    for (int i = 0; i < (int) bandMarkers.size(); ++i)
     {
-        const float freqHz = processor.apvts.getRawParameterValue (freqParamId)->load();
-        const float magnitudeDb = processor.getMagnitudeForFrequencyDb (freqHz);
+        const auto position = bandMarkerPosition (i);
+        const bool isDragged = i == draggedBandIndex;
+        const bool isHovered = i == hoveredBandIndex;
+        const float radius = isDragged ? 6.0f : (isHovered ? 5.0f : 4.0f);
 
-        const float x = AnalyzerMapping::frequencyToX (freqHz, width);
-        const float y = AnalyzerMapping::dbToY (magnitudeDb, height);
-
-        g.setColour (juce::Colours::orange);
-        g.fillEllipse (x - 4.0f, y - 4.0f, 8.0f, 8.0f);
+        g.setColour (juce::Colours::orange.withAlpha (isDragged || isHovered ? 1.0f : 0.9f));
+        g.fillEllipse (position.x - radius, position.y - radius, radius * 2.0f, radius * 2.0f);
 
         g.setColour (juce::Colours::black.withAlpha (0.6f));
-        g.drawEllipse (x - 4.0f, y - 4.0f, 8.0f, 8.0f, 1.0f);
+        g.drawEllipse (position.x - radius, position.y - radius, radius * 2.0f, radius * 2.0f, 1.0f);
     }
+}
+
+juce::Point<float> EqCurveOverlayComponent::bandMarkerPosition (int bandIndex) const
+{
+    const auto& info = bandMarkers[(size_t) bandIndex];
+    const float freqHz = processor.apvts.getRawParameterValue (info.freqParamId)->load();
+    const float magnitudeDb = processor.getMagnitudeForFrequencyDb (freqHz);
+
+    return { AnalyzerMapping::frequencyToX (freqHz, (float) getWidth()),
+             AnalyzerMapping::dbToY (magnitudeDb, (float) getHeight()) };
+}
+
+int EqCurveOverlayComponent::findNearestBandMarker (juce::Point<float> position) const
+{
+    int nearestIndex = -1;
+    float nearestDistance = hitRadiusPixels;
+
+    for (int i = 0; i < (int) bandMarkers.size(); ++i)
+    {
+        const float distance = bandMarkerPosition (i).getDistanceFrom (position);
+
+        if (distance <= nearestDistance)
+        {
+            nearestDistance = distance;
+            nearestIndex = i;
+        }
+    }
+
+    return nearestIndex;
+}
+
+bool EqCurveOverlayComponent::bandGainIsDraggable (int bandIndex) const
+{
+    const auto& info = bandMarkers[(size_t) bandIndex];
+
+    if (info.typeParamId == nullptr)
+        return true; // bands 2-4: always Bell/Peak, gain always meaningful
+
+    return processor.apvts.getRawParameterValue (info.typeParamId)->load() >= 0.5f; // index 1 == Shelf
+}
+
+void EqCurveOverlayComponent::updateParameterFromDrag (int bandIndex, juce::Point<float> position)
+{
+    const auto& info = bandMarkers[(size_t) bandIndex];
+
+    if (auto* freqParam = processor.apvts.getParameter (info.freqParamId))
+    {
+        const float rawHz = AnalyzerMapping::xToFrequency (position.x, (float) getWidth());
+        const auto range = freqParam->getNormalisableRange();
+        freqParam->setValueNotifyingHost (freqParam->convertTo0to1 (juce::jlimit (range.start, range.end, rawHz)));
+    }
+
+    if (bandGainIsDraggable (bandIndex))
+    {
+        if (auto* gainParam = processor.apvts.getParameter (info.gainParamId))
+        {
+            const float rawDb = AnalyzerMapping::yToDb (position.y, (float) getHeight());
+            const auto range = gainParam->getNormalisableRange();
+            gainParam->setValueNotifyingHost (gainParam->convertTo0to1 (juce::jlimit (range.start, range.end, rawDb)));
+        }
+    }
+}
+
+void EqCurveOverlayComponent::mouseDown (const juce::MouseEvent& event)
+{
+    const int hitIndex = findNearestBandMarker (event.position);
+
+    if (hitIndex < 0)
+        return;
+
+    draggedBandIndex = hitIndex;
+    setMouseCursor (juce::MouseCursor::DraggingHandCursor);
+
+    const auto& info = bandMarkers[(size_t) hitIndex];
+
+    if (auto* freqParam = processor.apvts.getParameter (info.freqParamId))
+        freqParam->beginChangeGesture();
+
+    if (auto* gainParam = processor.apvts.getParameter (info.gainParamId))
+        gainParam->beginChangeGesture();
+
+    updateParameterFromDrag (hitIndex, event.position);
+}
+
+void EqCurveOverlayComponent::mouseDrag (const juce::MouseEvent& event)
+{
+    if (draggedBandIndex >= 0)
+        updateParameterFromDrag (draggedBandIndex, event.position);
+}
+
+void EqCurveOverlayComponent::mouseUp (const juce::MouseEvent&)
+{
+    if (draggedBandIndex < 0)
+        return;
+
+    const auto& info = bandMarkers[(size_t) draggedBandIndex];
+
+    if (auto* freqParam = processor.apvts.getParameter (info.freqParamId))
+        freqParam->endChangeGesture();
+
+    if (auto* gainParam = processor.apvts.getParameter (info.gainParamId))
+        gainParam->endChangeGesture();
+
+    draggedBandIndex = -1;
+    setMouseCursor (hoveredBandIndex >= 0 ? juce::MouseCursor::PointingHandCursor
+                                           : juce::MouseCursor::NormalCursor);
+}
+
+void EqCurveOverlayComponent::mouseMove (const juce::MouseEvent& event)
+{
+    hoveredBandIndex = findNearestBandMarker (event.position);
+    setMouseCursor (hoveredBandIndex >= 0 ? juce::MouseCursor::PointingHandCursor
+                                           : juce::MouseCursor::NormalCursor);
+}
+
+void EqCurveOverlayComponent::mouseExit (const juce::MouseEvent&)
+{
+    hoveredBandIndex = -1;
 }
